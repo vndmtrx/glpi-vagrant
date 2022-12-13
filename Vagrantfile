@@ -46,7 +46,7 @@ Vagrant.configure("2") do |config|
     end
 
     nfs.vm.provision "shell", path: "scripts/100-geral.sh"
-    #nfs.vm.provision "shell", path: "scripts/102-nfs.sh"
+    nfs.vm.provision "shell", path: "scripts/102-nfs.sh"
   end
 
   config.vm.define "mariadb" do |db|
