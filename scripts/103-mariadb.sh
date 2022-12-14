@@ -26,9 +26,9 @@ EOF
 echo "Criando e permissionando banco para o GLPI"
 mariadb -uroot -p${SENHA_ROOT} <<- EOF
 CREATE DATABASE IF NOT EXISTS ${BANCO} character set utf8;
-CREATE USER '${USUARIO}'@'${SERVIDOR}' IDENTIFIED BY '${SENHA}';
-GRANT USAGE ON *.* TO '${USUARIO}'@'${SERVIDOR}' IDENTIFIED BY '${SENHA}';
-GRANT ALL PRIVILEGES ON ${BANCO}.* TO '${USUARIO}'@'${SERVIDOR}';
+CREATE USER '${USUARIO}'@'${RANGE}' IDENTIFIED BY '${SENHA}';
+GRANT USAGE ON *.* TO '${USUARIO}'@'${RANGE}' IDENTIFIED BY '${SENHA}';
+GRANT ALL PRIVILEGES ON ${BANCO}.* TO '${USUARIO}'@'${RANGE}';
 FLUSH PRIVILEGES;
 EOF
 
@@ -37,7 +37,7 @@ mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb -uroot -p${SENHA_ROOT} mysql
 
 echo "Permitindo acesso do usuário ao timezone."
 mariadb -uroot -p${SENHA_ROOT} <<- EOF
-GRANT SELECT ON mysql.time_zone_name TO '${USUARIO}'@'${SERVIDOR}';
+GRANT SELECT ON mysql.time_zone_name TO '${USUARIO}'@'${RANGE}';
 FLUSH PRIVILEGES;
 EOF
 

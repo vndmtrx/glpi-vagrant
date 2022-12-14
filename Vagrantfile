@@ -28,6 +28,7 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
       v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+      v.linked_clone = true
     end
 
     lb.vm.provision "shell", path: "scripts/101-haproxy.sh"
@@ -46,6 +47,7 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
       v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+      v.linked_clone = true
     end
 
     nfs.vm.provision "shell", path: "scripts/102-nfs.sh"
@@ -64,6 +66,7 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
       v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+      v.linked_clone = true
     end
 
     db.vm.provision :shell do |s|
@@ -72,7 +75,7 @@ Vagrant.configure("2") do |config|
         BANCO:ENV['BANCO'],
         USUARIO:ENV['USUARIO'],
         SENHA:ENV['SENHA'],
-        SERVIDOR:ENV['SERVIDOR']
+        RANGE:ENV['RANGE']
       }
       s.path = "scripts/103-mariadb.sh"
     end
@@ -93,6 +96,16 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
     end
 
-    app.vm.provision "shell", path: "scripts/104-app.sh"
+    app.vm.provision :shell do |s|
+      s.env = {
+        SENHA_ROOT:ENV['SENHA_ROOT'],
+        BANCO:ENV['BANCO'],
+        USUARIO:ENV['USUARIO'],
+        SENHA:ENV['SENHA'],
+        SERVIDOR:ENV['SERVIDOR'],
+        VERSAO_GLPI:ENV['VERSAO_GLPI']
+      }
+      s.path = "scripts/104-app.sh"
+    end
   end
 end
