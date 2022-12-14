@@ -3,13 +3,17 @@
 
 IMAGEM = "generic/rocky9"
 
+
 Vagrant.configure("2") do |config|
   
-  config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts"]
+  config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts", "vagrant-env"]
+  config.env.enable
 
   if Vagrant.has_plugin?("vagrant-vbguest")
     config.vbguest.auto_update = false
   end
+
+  config.vm.provision "shell", path: "scripts/100-geral.sh"
 
   config.vm.define "haproxy" do |lb|
     lb.vm.box = IMAGEM
@@ -26,7 +30,6 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
     end
 
-    lb.vm.provision "shell", path: "scripts/100-geral.sh"
     lb.vm.provision "shell", path: "scripts/101-haproxy.sh"
   end
 
@@ -45,7 +48,6 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
     end
 
-    nfs.vm.provision "shell", path: "scripts/100-geral.sh"
     nfs.vm.provision "shell", path: "scripts/102-nfs.sh"
   end
 
@@ -64,8 +66,16 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
     end
 
-    #db.vm.provision "shell", path: "scripts/100-geral.sh"
-    #db.vm.provision "shell", path: "scripts/103-mariadb.sh"
+    db.vm.provision :shell do |s|
+      s.env = {
+        SENHA_ROOT:ENV['SENHA_ROOT'],
+        BANCO:ENV['BANCO'],
+        USUARIO:ENV['USUARIO'],
+        SENHA:ENV['SENHA'],
+        SERVIDOR:ENV['SERVIDOR']
+      }
+      s.path = "scripts/103-mariadb.sh"
+    end
   end
 
   config.vm.define "app" do |app|
@@ -83,7 +93,6 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
     end
 
-    app.vm.provision "shell", path: "scripts/100-geral.sh"
     app.vm.provision "shell", path: "scripts/104-app.sh"
   end
 end

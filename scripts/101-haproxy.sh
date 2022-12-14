@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-echo "Instalação do HAProxy"
+echo "Instalação do HAProxy."
 dnf install -y haproxy
 
-echo "Implantação das configurações do HAProxy para o GLPI"
-cat <<EOF | tee /etc/haproxy/haproxy.cfg > /dev/null
+echo "Implantação das configurações do HAProxy para o GLPI."
+cat << EOF | tee /etc/haproxy/haproxy.cfg > /dev/null
 global
     log         127.0.0.1 local2
 
@@ -62,15 +62,15 @@ backend glpi-server
     server glpi-server 192.168.56.13:80 check observe layer7
 EOF
 
-echo "Liberação do acesso à qualquer porta pelo HAProxy no SELinux"
+echo "Liberação do acesso à qualquer porta pelo HAProxy no SELinux."
 setsebool -P haproxy_connect_any 1
 
-echo "Liberação do serviço http e da porta 8081 no firewalld"
-firewall-cmd --zone=public --add-service=http --permanent
-firewall-cmd --zone=public --add-port=8081/tcp --permanent
+echo "Liberação do serviço http e da porta 8081 no firewalld."
+firewall-cmd --permanent --zone=public --add-service=http
+firewall-cmd --permanent --zone=public --add-port=8081/tcp
 firewall-cmd --reload
 
-echo "Ativação do serviço HAProxy"
+echo "Ativação do serviço HAProxy."
 systemctl enable haproxy.service
 systemctl start haproxy.service
 
