@@ -41,8 +41,8 @@ Vagrant.configure("2") do |config|
   config.vm.define "mariadb" do |db|
     db.vm.box = IMAGEM
     db.vm.hostname = "mariadb.glpi.local"
-    db.vm.network "private_network", :ip => "192.168.56.11", :adapter => 2, :hostsupdater => "skip"
-    db.vm.network "forwarded_port", guest: 9090, host: 9012
+    db.vm.network "private_network", :ip => "192.168.56.11", :adapter => 2
+    db.vm.network "forwarded_port", guest: 9090, host: 9011
     db.vm.provision :hosts, :sync_hosts => true
     db.vm.provider "virtualbox" do |v|
       v.memory = 2048
@@ -69,8 +69,8 @@ Vagrant.configure("2") do |config|
   config.vm.define "app" do |app|
     app.vm.box = IMAGEM
     app.vm.hostname = "app.glpi.local"
-    app.vm.network "private_network", :ip => "192.168.56.12", :adapter => 2, :hostsupdater => "skip"
-    app.vm.network "forwarded_port", guest: 9090, host: 9013
+    app.vm.network "private_network", :ip => "192.168.56.12", :adapter => 2
+    app.vm.network "forwarded_port", guest: 9090, host: 9012
     app.vm.provision :hosts, :sync_hosts => true
     app.vm.provider "virtualbox" do |v|
       v.memory = 2048
