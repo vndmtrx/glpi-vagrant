@@ -6,12 +6,16 @@ IMAGEM = "generic/rocky9"
 
 Vagrant.configure("2") do |config|
   
-  config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts", "vagrant-env"]
+  config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts", "vagrant-env", "vagrant-hostsupdater"]
   config.env.enable
 
   if Vagrant.has_plugin?("vagrant-vbguest")
     config.vbguest.auto_update = false
   end
+
+  config.hostsupdater.aliases = {
+    '192.168.56.10' => ['glpi.local']
+  }
 
   config.vm.provision "shell", path: "scripts/100-geral.sh"
 
@@ -34,29 +38,10 @@ Vagrant.configure("2") do |config|
     lb.vm.provision "shell", path: "scripts/101-haproxy.sh"
   end
 
-  config.vm.define "nfs" do |nfs|
-    nfs.vm.box = IMAGEM
-    nfs.vm.hostname = "nfs.glpi.local"
-    nfs.vm.network "private_network", :ip => "192.168.56.11", :adapter => 2
-    nfs.vm.network "forwarded_port", guest: 9090, host: 9011
-    nfs.vm.provision :hosts, :sync_hosts => true
-    nfs.vm.provider "virtualbox" do |v|
-      v.memory = 1024
-      v.cpus = 1
-      v.default_nic_type = "virtio"
-      v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
-      v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
-      v.linked_clone = true
-    end
-
-    nfs.vm.provision "shell", path: "scripts/102-nfs.sh"
-  end
-
   config.vm.define "mariadb" do |db|
     db.vm.box = IMAGEM
     db.vm.hostname = "mariadb.glpi.local"
-    db.vm.network "private_network", :ip => "192.168.56.12", :adapter => 2
+    db.vm.network "private_network", :ip => "192.168.56.11", :adapter => 2, :hostsupdater => "skip"
     db.vm.network "forwarded_port", guest: 9090, host: 9012
     db.vm.provision :hosts, :sync_hosts => true
     db.vm.provider "virtualbox" do |v|
@@ -77,14 +62,14 @@ Vagrant.configure("2") do |config|
         SENHA:ENV['SENHA'],
         RANGE:ENV['RANGE']
       }
-      s.path = "scripts/103-mariadb.sh"
+      s.path = "scripts/102-mariadb.sh"
     end
   end
 
   config.vm.define "app" do |app|
     app.vm.box = IMAGEM
     app.vm.hostname = "app.glpi.local"
-    app.vm.network "private_network", :ip => "192.168.56.13", :adapter => 2
+    app.vm.network "private_network", :ip => "192.168.56.12", :adapter => 2, :hostsupdater => "skip"
     app.vm.network "forwarded_port", guest: 9090, host: 9013
     app.vm.provision :hosts, :sync_hosts => true
     app.vm.provider "virtualbox" do |v|
@@ -105,7 +90,7 @@ Vagrant.configure("2") do |config|
         SERVIDOR:ENV['SERVIDOR'],
         VERSAO_GLPI:ENV['VERSAO_GLPI']
       }
-      s.path = "scripts/104-app.sh"
+      s.path = "scripts/103-app.sh"
     end
   end
 end

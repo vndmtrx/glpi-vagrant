@@ -3,6 +3,14 @@
 echo "Instalação do HAProxy."
 dnf install -y haproxy
 
+echo "Criação de certificado autoassinado para o HAProxy"
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout /etc/haproxy/haproxy-selfsigned.key \
+        -out /etc/haproxy/haproxy-selfsigned.crt \
+        -subj "/C=BR/ST=Parana/L=Curitiba/O=OverStackFlow/OU=IT/CN=glpi.local"
+cat /etc/haproxy/haproxy-selfsigned.key /etc/haproxy/haproxy-selfsigned.crt >> /etc/haproxy/haproxy-selfsigned.pem
+chmod 600 /etc/haproxy/haproxy-selfsigned.pem
+
 echo "Implantação das configurações do HAProxy para o GLPI."
 cat << EOF | tee /etc/haproxy/haproxy.cfg > /dev/null
 global
@@ -51,7 +59,7 @@ frontend stats
     stats auth admin:admin
 
 frontend glpi-server
-    bind *:80
+    bind *:443 ssl crt /etc/haproxy/haproxy-selfsigned.pem
     default_backend glpi-server
    
 backend glpi-server
@@ -59,7 +67,7 @@ backend glpi-server
     http-check expect status 200
     balance roundrobin
     default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
-    server glpi-server 192.168.56.13:80 check observe layer7
+    server glpi-server 192.168.56.12:80 check observe layer7
 EOF
 
 echo "Liberação do acesso à qualquer porta pelo HAProxy no SELinux."
