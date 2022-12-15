@@ -35,11 +35,11 @@ defaults
     log                     global
     option                  httplog
     option                  dontlognull
-    option http-server-close
-    option forwardfor       except 127.0.0.0/8
+    option                  http-server-close
     option                  redispatch
     option                  contstats
     retries                 3
+    option forwardfor       except 127.0.0.0/8
     timeout http-request    10s
     timeout queue           1m
     timeout connect         10s
@@ -59,7 +59,9 @@ frontend stats
     stats auth admin:admin
 
 frontend glpi-server
-    bind *:443 ssl crt /etc/haproxy/haproxy-selfsigned.pem
+    bind *:443 ssl crt /etc/haproxy/haproxy-selfsigned.pem ssl-min-ver TLSv1.2
+    http-request set-header X-Forwarded-Proto https
+    http-request set-header X-Forwarded-Port 443
     default_backend glpi-server
    
 backend glpi-server
@@ -73,8 +75,8 @@ EOF
 echo "Liberação do acesso à qualquer porta pelo HAProxy no SELinux."
 setsebool -P haproxy_connect_any 1
 
-echo "Liberação do serviço http e da porta 8081 no firewalld."
-firewall-cmd --permanent --zone=public --add-service=http
+echo "Liberação do serviço https e da porta 8081 no firewalld."
+firewall-cmd --permanent --zone=public --add-service=https
 firewall-cmd --permanent --zone=public --add-port=8081/tcp
 firewall-cmd --reload
 
