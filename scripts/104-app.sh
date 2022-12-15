@@ -67,15 +67,17 @@ setsebool -P httpd_can_network_connect 1
 setsebool -P httpd_can_network_connect_db 1
 setsebool -P httpd_can_connect_ldap 1
 setsebool -P httpd_use_nfs 1
-setsebool -P httpd_unified 1
+#setsebool -P httpd_unified 1
 
+echo "Ajustes das permissões das pastas do GLPI, no SELinux."
 semanage fcontext -a -t httpd_sys_content_t "/opt/glpi(/.*)?"
 semanage fcontext -a -t httpd_sys_rw_content_t "/opt/glpi/files(/.*)?"
+semanage fcontext -a -t httpd_sys_rw_content_t "/opt/glpi/config(/.*)?"
 semanage fcontext -a -t httpd_sys_rw_content_t "/opt/glpi/marketplace(/.*)?"
 semanage fcontext -a -t httpd_log_t "/opt/glpi/files/_log(/.*)?"
 restorecon -F -R -v /opt/glpi
 
-echo "Liberação do serviço http e da porta 8081 no firewalld."
+echo "Liberação do serviço http, no firewalld."
 firewall-cmd --permanent --zone=public --add-service=http
 firewall-cmd --reload
 
@@ -83,15 +85,25 @@ echo "Ativação do serviço Apache."
 systemctl enable httpd.service
 systemctl start httpd.service
 
+echo "Configuração inicial do banco de dados."
+php /opt/glpi/bin/console db:install \
+        -L pt_BR -H ${SERVIDOR} \
+        -d ${BANCO} \
+        -u ${USUARIO} \
+        -p ${SENHA} \
+        --enable-telemetry --no-interaction
+
+echo "Remoção do script de backup do GLPI."
+rm -rf /opt/glpi/install/install.php
+
 echo "---------------------------------------"
 echo "Informações de configuração para o GLPI"
 echo "---------------------------------------"
+echo "Banco de dados do GLPI: ${BANCO}"
 echo "Endereço do banco: ${SERVIDOR}"
 echo "Usuário do banco: ${USUARIO}"
 echo "Senha do banco: ${SENHA}"
-echo "Banco de dados do GLPI: ${BANCO}"
 echo "---------------------------------------"
-
 
 echo "OK!"
 exit 0
