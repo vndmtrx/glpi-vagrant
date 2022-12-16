@@ -23,7 +23,7 @@ DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 EOF
 
-echo "Criando e permissionando banco para o GLPI"
+echo "Criando e permissionando banco para o GLPI."
 mariadb -uroot -p${SENHA_ROOT} <<- EOF
 CREATE DATABASE IF NOT EXISTS ${BANCO} character set utf8;
 CREATE USER '${USUARIO}'@'${RANGE}' IDENTIFIED BY '${SENHA}';

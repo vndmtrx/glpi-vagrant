@@ -3,7 +3,7 @@
 echo "Instalação do HAProxy."
 dnf install -y haproxy
 
-echo "Criação de certificado autoassinado para o HAProxy"
+echo "Criação de certificado autoassinado para o HAProxy."
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout /etc/haproxy/haproxy-selfsigned.key \
         -out /etc/haproxy/haproxy-selfsigned.crt \
@@ -70,7 +70,7 @@ backend glpi-server
     http-check expect status 200
     balance roundrobin
     default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
-    server glpi-server 192.168.56.12:80 check observe layer7
+    server glpi-server 192.168.56.13:80 check observe layer7
 EOF
 
 echo "Liberação do acesso da porta 8081 pelo HAProxy no SELinux."

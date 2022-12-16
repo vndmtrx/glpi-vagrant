@@ -16,7 +16,7 @@ echo "Instalação do Apache."
 dnf install -y httpd httpd-tools
 
 echo "Instalação do mod_security no Apache."
-dnf install -y mod_security
+dnf install -y mod_security mod_security_crs
 
 echo "Instalação do cliente do MariaDB."
 dnf install -y mariadb
@@ -35,8 +35,8 @@ cat << EOF | tee /etc/httpd/conf.d/001-glpi.conf
 </Directory>
 EOF
 
-echo "Instalação das dependências do GLPI"
-dnf install -y php-pecl-mysql php-gd php-intl php-ldap php-pecl-zip
+echo "Instalação das dependências do GLPI."
+dnf install -y php-pecl-mysql php-gd php-intl php-ldap php-pecl-zip php-pecl-memcached
 
 echo "Download do GLPI na versão ${VERSAO_GLPI}."
 #wget -O- https://github.com/glpi-project/glpi/releases/download/${VERSAO_GLPI}/glpi-${VERSAO_GLPI}.tgz | tar -zxv -C /var/www/html/
@@ -86,6 +86,7 @@ setsebool -P httpd_can_sendmail 1
 setsebool -P httpd_can_network_connect 1
 setsebool -P httpd_can_network_connect_db 1
 setsebool -P httpd_can_connect_ldap 1
+setsebool -P httpd_can_network_memcache 1
 
 echo "Checagem dos requerimentos de sistema para a instalação do GLPI."
 php /opt/glpi/bin/console glpi:system:check_requirements
@@ -97,6 +98,10 @@ php /opt/glpi/bin/console db:install \
         -u ${USUARIO} \
         -p ${SENHA} \
         --enable-telemetry --no-interaction
+
+echo "Configuração do Memcached como engine de cache do GLPI."
+php /opt/glpi/bin/console glpi:cache:configure --use-default
+php /opt/glpi/bin/console glpi:cache:configure --dsn=memcached://192.168.56.11
 
 echo "Remoção do script de backup do GLPI."
 rm -rf /opt/glpi/install/install.php

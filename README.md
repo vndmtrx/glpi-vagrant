@@ -1,92 +1,82 @@
-# Glpi Vagrant
+# Glpi no Vagrant
 
+GLPI é um software bastante usado hoje em dia para fazer o gerenciamento de filas de atendimento, service desk e acompanhamento de inventário de ativos de TI. Este repositório têm como objetivo demonstrar a instalação automatizada de uma instalação completa do GLPI, dividido entre várias partes.
 
+![Dashboard do GLPI](glpi_10.png)
 
-## Getting started
+## Informações iniciais
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Primeiramente é preciso informar que esse repositório faz uso de scripts bash e não usa ansible, então sempre é recomendado destruir toda a estrutura (`vagrant destroy -f`) e recriar novamente (`vagrant up`) após alterações nos scripts ou no próprio Vagrantfile, para garantir a idempotência.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Adicionalmente, foi criado um arquivo `.env` onde ficam as configurações iniciais básicas necessárias para se subir a instalação do GLPI. Elas não são muitas, e basicamente se resumem a usuários e senhas, e a versão do GLPI que será instalada.
 
-## Add your files
+### Opiniões assumidas sobre algumas configurações
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+Uma coisa para qual esse repositório foi pensado foi a de ser possível customizar a instalação do cluster de algumas maneiras bem simples, e mantendo-se o restante da instalação o mais automatizado possível. Desta forma, algumas decisões pessoais foram tomadas. As mais importantes são:
 
+1. O Vagrant utiliza alguns plugins para fazer o gerenciamento do arquivo de hosts das máquinas tanto nos guests quanto no host. Desta forma, ocasionalmente podem aparecer solicitações de senha, para a alteração do arquivo de hosts, que é bloqueada para usuários administrativos na maioria dos SOs. Isso foi colocado para facilitar os acessos usando somente um endereço de DNS e não pelo IP;
+
+2. Foi usada uma imagem do Rocky Linux 9.1 instalada através do box `generic/rocky9` pois é uma variante do RHEL (e do CentOS por tabela) muito robusta e *feature compatible* com o RHEL;
+
+3. Foi decidido usar o Vagrant em conjunto com o VirtualBox. Poderia ser usado outro Virtualizador (até o Virt Manager) mas esta foi uma decisão tomada unicamente por questão de prática com o uso do VirtualBox;
+
+4. Foi decidido usar scripts em bash em vez de receitas do Ansible, pois como ferramenta de estudo, é bastante clara a sequência de execução dos comandos de instalação. No futuro, uma versão alternativa usando Ansible será disponibilizada;
+
+5. As redes locais das interfaces NAT das máquinas virtuais do arquivo `Vagrantfile` foram alteradas para `10.254.0.0/16`, assim, evitando conflitos com as diversas configurações de rede local que possam existir por aí;
+
+6. Foi criada uma interface de rede do tipo _host only_ no range `192.168.56.0/24` para permitir que as máquinas conversem entre si sem precisar sair do VirtualBox. Adicionalmente, é possível acessar os nós do cluster e os serviços disponibilizados via LoadBalancer do cluster.
+
+### Construção da imagem base
+
+Foram feitas algumas alterações na imagem base, para alterar os locales da máquina, adicionar repositórios extras e adicionalmente instalar o Cockpit (que pode ser acessado na porta 9090 das máquinas em questão).
+
+### Instalação do Balanceador HAProxy
+
+Não há muito segredo na instalação do HAProxy. Foi feita a geração de um certificado autoassinado para usar com a conexão SSL, foi adicionado um arquivo de configuração padrão para o HAProxy e foi feito um ajuste no SELinux para liberar a porta 8081 para acesso das estatísticas. Adicionalmente, as portas https e 8081 foram adicionadas no firewalld.
+
+### Instalação do Banco de Daos MariaDB
+
+Para o banco MariaDB, foi feita a instalação, alteração da senha de root e o hardening da instalação do banco de dados e também foi criado um usuário para o GLPI no banco. Adicionalmente foram adicionadas as informações de *Time Zone* dentro do banco mysql e liberada a permissão para o usuário do GLPI de consultar as referidas entradas. A porta do mariadb foi adicionada ao firewalld.
+
+### Instalação da Máquina de Aplicação
+
+Para a instalação da máquina de aplicação, foi adicionado o repositório REMI para podermos usar a versão mais recente do PHP em nossa instalação. Adicionalmente foi instalado um plugin do Cockpit para permitir a navegação de arquivos. Posteriormente foi instalado o PHP, o Apache e o módulo mod_security do Apache.
+
+Após a instalação dos pacotes, foi feita a configuração do VirtualHost do Apache para apontar para a pasta onde estará instalado o GLPI, a instalação das dependências do GLPI e então feito o download do código do GLPI do repositório oficial.
+
+Adicionalmente, nesta instalação fizemos a separação das pastas config, files e log para outra pasta fora do VirtualHost, para que não possa ser acessada indevidamente em alguma situação de exposição da máquina.
+
+Em seguida foi feita a configuração do PHP para os parâmetros necessários para o bom funcionamento do GLPI. Após, foi feita a liberação de vários parâmetros de segurança do SELinux em relação ao Apache, necessários para permitir o acesso do Apache e do PHP ao envio de e-mails, conexão ao banco e ldap.
+
+Em seguida, é executado comando de checagem dos requisitos para a instalação do GLPI e então gerada a estrutura básica do banco de dados, necessária para o funcionamento do GLPI.
+
+Em seguimento a isso, as senhas dos usuários iniciais do GLPI são alterados para `semsenha`.
+
+Por último é feita a aplicação de ajustes de permissão de acesso aos arquivos e pastas do GLPI, no SELinux e no sistema de arquivos, a liberação da porta http do Apache no firewalld e a exposição das configurações do GLPI, para uso posterior.
+
+## Acessos
+
+Esta instalação cria várias portas de acesso às várias VMs criadas nesse Vagrant.
+
+Para acessar o GLPI em si, o acesso pode ser feito no endereço [https://glpi.local](https://glpi.local). Os usuários são `glpi`, `tech`, `post-only` e para todos a senha é `semsenha`.
+
+Para acessar o painel do HAProxy, o acesso pode ser feito no endereço [http://haproxy.glpi.local:8081/glpi-stats](http://haproxy.glpi.local:8081/glpi-stats). O usuário e a senha para acesso são `admin`.
+
+Para acessar os painéis do Cockpit de cada máquina, o usuário e a senha são `vagrant` e os endereços são os seguintes:
+- [https://haproxy.glpi.local:9090](https://haproxy.glpi.local:9090)
+- [https://mariadb.glpi.local:9090](https://mariadb.glpi.local:9090)
+- [https://app.glpi.local:9090](https://app.glpi.local:9090)
+
+## Destruindo o ambiente de estudos e liberando os recursos alocados
+
+Para apagar a instalação e todos os recursos criados, é só usar o comando abaixo. Também pode ser usado caso você queira recriar o ambiente do zero.
+
+```bash
+vagrant destroy -f
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/devops-in-a-jar/glpi-vagrant.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+# Considerações finais
 
-- [ ] [Set up project integrations](https://gitlab.com/devops-in-a-jar/glpi-vagrant/-/settings/integrations)
+Como dito mais acima, este repositório é um esforço de estudo de como fazer deploy de uma instalação do GLPI simulando um ambiente de produção e todas as situações passadas por mim neste processo foram documentadas ou neste README ou através de comentários nos arquivos dos scripts, que são separados segundo as fases que estão sendo efetuadas no momento, para deixar mais claro e organizado.
 
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Em tempo, esse deploy não foi testado em um ambiente Windows, somente em um ambiente Linux (Linux Mint 20.2 Uma). Caso você encontre algum problema com a execução deste repositório em outros ambientes, sinta-se à vontade de enviar contribuições e/ou até PRs com correções ou adições ao script.
