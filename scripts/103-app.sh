@@ -81,6 +81,12 @@ session.cookie_samesite = Lax
 date.timezone = America/Sao_Paulo
 EOF
 
+echo "Liberações de acesso do Apache, PHP e GLPI no SELinux."
+setsebool -P httpd_can_sendmail 1
+setsebool -P httpd_can_network_connect 1
+setsebool -P httpd_can_network_connect_db 1
+setsebool -P httpd_can_connect_ldap 1
+
 echo "Checagem dos requerimentos de sistema para a instalação do GLPI."
 php /opt/glpi/bin/console glpi:system:check_requirements
 
@@ -101,12 +107,6 @@ UPDATE glpi_users
 SET password='$2y$10$gSOO66tUqpVuhx9ykDtaA.JpsY8QVVXmrVChdWqahutT93XV/aCi2'
 WHERE name IN ('post-only', 'tech', 'normal', 'glpi');
 EOF
-
-echo "Liberações de acesso do Apache, PHP e GLPI no SELinux."
-setsebool -P httpd_can_sendmail 1
-setsebool -P httpd_can_network_connect 1
-setsebool -P httpd_can_network_connect_db 1
-setsebool -P httpd_can_connect_ldap 1
 
 echo "Ajustes das permissões das pastas do GLPI, no SELinux."
 semanage fcontext -a -t httpd_sys_content_t "/opt/glpi(/.*)?"
