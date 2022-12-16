@@ -42,10 +42,26 @@ echo "Download do GLPI na versão ${VERSAO_GLPI}."
 #wget -O- https://github.com/glpi-project/glpi/releases/download/${VERSAO_GLPI}/glpi-${VERSAO_GLPI}.tgz | tar -zxv -C /var/www/html/
 wget -O- https://github.com/glpi-project/glpi/releases/download/${VERSAO_GLPI}/glpi-${VERSAO_GLPI}.tgz | tar -zxv -C /opt/
 
-echo "Ajuste das permissões dos arquivos."
-chown -Rf apache. /opt/glpi
-find /opt/glpi -type d -exec chmod 755 {} \;
-find /opt/glpi -type f -exec chmod 644 {} \;
+echo "Criação das pastas de configuração, log e arquivos do GLPI em pasta fora do alcance do Apache."
+mkdir /var/lib/glpi
+mv /opt/glpi/config /var/lib/glpi/config
+mv /opt/glpi/files/_log /var/lib/glpi/log
+mv /opt/glpi/files /var/lib/glpi/files
+
+echo "Configuração de alteração das pastas de configuração, log e arquivos para o GLPI."
+cat << "EOF" | tee /opt/glpi/inc/downstream.php
+<?php
+define('GLPI_CONFIG_DIR', '/var/lib/glpi/config');
+
+if (file_exists(GLPI_CONFIG_DIR . '/local_define.php')) {
+   require_once GLPI_CONFIG_DIR . '/local_define.php';
+}
+EOF
+cat << "EOF" | tee /var/lib/glpi/config/local_define.php
+<?php
+define('GLPI_VAR_DIR', '/var/lib/glpi/files');
+define('GLPI_LOG_DIR', '/var/lib/glpi/log');
+EOF
 
 echo "Alterações de configuração do PHP."
 #sed -i 's,;date.timezone =,date.timezone = America/Sao_Paulo,g' /etc/php.ini
@@ -53,8 +69,11 @@ echo "Alterações de configuração do PHP."
 cat << EOF | tee /etc/php.d/00-glpi.ini
 [PHP]
 upload_max_filesize = 20M
+max_execution_time = 600
 
 [Session]
+session.auto_start = off
+session.use_trans_sid = 0
 session.cookie_httponly = On
 session.cookie_samesite = Lax
 
@@ -62,31 +81,8 @@ session.cookie_samesite = Lax
 date.timezone = America/Sao_Paulo
 EOF
 
-# https://dwalsh.fedorapeople.org/SELinux/httpd_selinux.html
-# https://www.serverlab.ca/tutorials/linux/web-servers-linux/configuring-selinux-policies-for-apache-web-servers/
-echo "Liberações de acesso do Apache, PHP e GLPI no SELinux."
-setsebool -P httpd_can_sendmail 1
-setsebool -P httpd_can_network_connect 1
-setsebool -P httpd_can_network_connect_db 1
-setsebool -P httpd_can_connect_ldap 1
-setsebool -P httpd_use_nfs 1
-#setsebool -P httpd_unified 1
-
-echo "Ajustes das permissões das pastas do GLPI, no SELinux."
-semanage fcontext -a -t httpd_sys_content_t "/opt/glpi(/.*)?"
-semanage fcontext -a -t httpd_sys_rw_content_t "/opt/glpi/files(/.*)?"
-semanage fcontext -a -t httpd_sys_rw_content_t "/opt/glpi/config(/.*)?"
-semanage fcontext -a -t httpd_sys_rw_content_t "/opt/glpi/marketplace(/.*)?"
-semanage fcontext -a -t httpd_log_t "/opt/glpi/files/_log(/.*)?"
-restorecon -F -R -v /opt/glpi
-
-echo "Liberação do serviço http, no firewalld."
-firewall-cmd --permanent --zone=public --add-service=http
-firewall-cmd --reload
-
-echo "Ativação do serviço Apache."
-systemctl enable httpd.service
-systemctl start httpd.service
+echo "Checagem dos requerimentos de sistema para a instalação do GLPI."
+php /opt/glpi/bin/console glpi:system:check_requirements
 
 echo "Configuração inicial do banco de dados."
 php /opt/glpi/bin/console db:install \
@@ -105,6 +101,42 @@ UPDATE glpi_users
 SET password='$2y$10$gSOO66tUqpVuhx9ykDtaA.JpsY8QVVXmrVChdWqahutT93XV/aCi2'
 WHERE name IN ('post-only', 'tech', 'normal', 'glpi');
 EOF
+
+echo "Liberações de acesso do Apache, PHP e GLPI no SELinux."
+setsebool -P httpd_can_sendmail 1
+setsebool -P httpd_can_network_connect 1
+setsebool -P httpd_can_network_connect_db 1
+setsebool -P httpd_can_connect_ldap 1
+
+echo "Ajustes das permissões das pastas do GLPI, no SELinux."
+semanage fcontext -a -t httpd_sys_content_t "/opt/glpi(/.*)?"
+semanage fcontext -a -t httpd_sys_content_t "/opt/glpi(/.*)?/\.htaccess"
+semanage fcontext -a -t httpd_sys_rw_content_t "/opt/glpi/marketplace(/.*)?"
+restorecon -FR /opt/glpi
+
+echo "Ajustes das permissões das pastas de configuração, log e arquivos do GLPI, no SELinux."
+semanage fcontext -a -t httpd_sys_rw_content_t "/var/lib/glpi/config(/.*)?"
+semanage fcontext -a -t httpd_sys_rw_content_t "/var/lib/glpi/files(/.*)?"
+semanage fcontext -a -t httpd_log_t "/var/lib/glpi/log(/.*)?"
+restorecon -FR /var/lib/glpi
+
+echo "Ajuste das permissões dos arquivos."
+chown -Rf apache. /opt/glpi
+find /opt/glpi -type d -exec chmod 755 {} \;
+find /opt/glpi -type f -exec chmod 644 {} \;
+
+echo "Ajuste das pastas de configuração, log e arquivos do GLPI."
+chown -Rf apache. /var/lib/glpi
+find /var/lib/glpi -type d -exec chmod 755 {} \;
+find /var/lib/glpi -type f -exec chmod 644 {} \;
+
+echo "Liberação do serviço http, no firewalld."
+firewall-cmd --permanent --zone=public --add-service=http
+firewall-cmd --reload
+
+echo "Ativação do serviço Apache."
+systemctl enable httpd.service
+systemctl start httpd.service
 
 echo "---------------------------------------"
 echo "Informações de configuração para o GLPI"
