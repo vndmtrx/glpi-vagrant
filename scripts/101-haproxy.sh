@@ -73,8 +73,9 @@ backend glpi-server
     server glpi-server 192.168.56.12:80 check observe layer7
 EOF
 
-echo "Liberação do acesso à qualquer porta pelo HAProxy no SELinux."
-setsebool -P haproxy_connect_any 1
+echo "Liberação do acesso da porta 8081 pelo HAProxy no SELinux."
+#setsebool -P haproxy_connect_any 1
+semanage port -m -t http_port_t -p tcp 8081
 
 echo "Liberação do serviço https e da porta 8081 no firewalld."
 firewall-cmd --permanent --zone=public --add-service=https
