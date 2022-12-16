@@ -18,6 +18,9 @@ dnf install -y httpd httpd-tools
 echo "Instalação do mod_security no Apache."
 dnf install -y mod_security
 
+echo "Instalação do cliente do MariaDB."
+dnf install -y mariadb
+
 echo "Configuração do VirtualHost do GLPI."
 cat << EOF | tee /etc/httpd/conf.d/001-glpi.conf
 <VirtualHost *:80>
@@ -95,6 +98,13 @@ php /opt/glpi/bin/console db:install \
 
 echo "Remoção do script de backup do GLPI."
 rm -rf /opt/glpi/install/install.php
+
+echo "Alteração da senha dos usuários post-only, tech, normal e glpi para 'semsenha'."
+mariadb -h ${BANCO} -u${USUARIO} -p${SENHA} banco_glpi <<- EOF
+UPDATE glpi_users
+SET password='$2y$10$gSOO66tUqpVuhx9ykDtaA.JpsY8QVVXmrVChdWqahutT93XV/aCi2'
+WHERE name IN ('post-only', 'tech', 'normal', 'glpi');
+EOF
 
 echo "---------------------------------------"
 echo "Informações de configuração para o GLPI"
