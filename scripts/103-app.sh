@@ -40,7 +40,7 @@ dnf install -y php-pecl-mysql php-gd php-intl php-ldap php-pecl-zip
 
 echo "Download do GLPI na versão ${VERSAO_GLPI}."
 #wget -O- https://github.com/glpi-project/glpi/releases/download/${VERSAO_GLPI}/glpi-${VERSAO_GLPI}.tgz | tar -zxv -C /var/www/html/
-wget -O- https://github.com/glpi-project/glpi/releases/download/${VERSAO_GLPI}/glpi-${VERSAO_GLPI}.tgz | tar -zxv -C /opt/
+curl -fsSL https://github.com/glpi-project/glpi/releases/download/${VERSAO_GLPI}/glpi-${VERSAO_GLPI}.tgz | tar -zx -C /opt/
 
 echo "Criação das pastas de configuração, log e arquivos do GLPI em pasta fora do alcance do Apache."
 mkdir /var/lib/glpi
