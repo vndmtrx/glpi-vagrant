@@ -100,7 +100,7 @@ echo "Remoção do script de backup do GLPI."
 rm -rf /opt/glpi/install/install.php
 
 echo "Alteração da senha dos usuários post-only, tech, normal e glpi para 'semsenha'."
-mariadb -h ${BANCO} -u${USUARIO} -p${SENHA} banco_glpi <<- EOF
+mariadb -h ${SERVIDOR} -u${USUARIO} -p${SENHA} ${BANCO} <<- "EOF"
 UPDATE glpi_users
 SET password='$2y$10$gSOO66tUqpVuhx9ykDtaA.JpsY8QVVXmrVChdWqahutT93XV/aCi2'
 WHERE name IN ('post-only', 'tech', 'normal', 'glpi');

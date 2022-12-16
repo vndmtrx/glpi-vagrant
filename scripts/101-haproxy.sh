@@ -12,15 +12,16 @@ cat /etc/haproxy/haproxy-selfsigned.key /etc/haproxy/haproxy-selfsigned.crt >> /
 chmod 600 /etc/haproxy/haproxy-selfsigned.pem
 
 echo "Implantação das configurações do HAProxy para o GLPI."
+mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.orig
 cat << EOF | tee /etc/haproxy/haproxy.cfg > /dev/null
 global
-    log         127.0.0.1 local2
+    log         127.0.0.1 local2 info
 
-    chroot	/var/lib/haproxy
+    chroot	    /var/lib/haproxy
     pidfile     /var/run/haproxy.pid
     maxconn     4000
     user        haproxy
-    group	haproxy
+    group	    haproxy
     daemon
 
     # turn on stats unix socket
