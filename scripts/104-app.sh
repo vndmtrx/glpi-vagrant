@@ -103,6 +103,9 @@ echo "Configuração do Memcached como engine de cache do GLPI."
 php /opt/glpi/bin/console glpi:cache:configure --use-default
 php /opt/glpi/bin/console glpi:cache:configure --dsn=memcached://192.168.56.11
 
+echo "Alteração da URL padrão do GLPI para glpi.local."
+php /opt/glpi/bin/console glpi:config:set url_base 'https://glpi.local'
+
 echo "Remoção do script de backup do GLPI."
 rm -rf /opt/glpi/install/install.php
 
@@ -111,6 +114,11 @@ mariadb -h ${SERVIDOR} -u${USUARIO} -p${SENHA} ${BANCO} <<- "EOF"
 UPDATE glpi_users
 SET password='$2y$10$gSOO66tUqpVuhx9ykDtaA.JpsY8QVVXmrVChdWqahutT93XV/aCi2'
 WHERE name IN ('post-only', 'tech', 'normal', 'glpi');
+EOF
+
+echo "Inserção de entrada CRON para o GLPI."
+cat << "EOF" | tee /etc/crontab
+* * * * * apache /usr/bin/php -f /opt/glpi/front/cron.php
 EOF
 
 echo "Ajustes das permissões das pastas do GLPI, no SELinux."
