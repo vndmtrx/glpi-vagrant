@@ -70,7 +70,7 @@ backend glpi-server
     http-check expect status 200
     balance roundrobin
     default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
-    server glpi-server 192.168.56.13:80 check observe layer7
+    server glpi-server ${SERVIDOR_WEB}:80 check observe layer7
 EOF
 
 echo "Liberação do acesso da porta 8081 pelo HAProxy no SELinux."

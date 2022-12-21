@@ -23,9 +23,13 @@ dnf install -y mariadb
 
 echo "Configuração do VirtualHost do GLPI."
 cat << EOF | tee /etc/httpd/conf.d/001-glpi.conf
-<VirtualHost *:80>
+<VirtualHost ${SERVIDOR_WEB}:80>
     DocumentRoot "/opt/glpi/"
-    ServerName GLPI
+    ServerName ${GLPI_URL}
+
+    SecRuleEngine On
+    SecRule ARGS:testparam "@contains teste" "id:1234,deny,status:403,msg:'Regra de teste do mod_security foi acionada'"
+    #Teste com: https://${GLPI_URL}?testparam=teste 
 </VirtualHost>
 
 <Directory /opt/glpi/>
@@ -93,7 +97,7 @@ php /opt/glpi/bin/console glpi:system:check_requirements
 
 echo "Configuração inicial do banco de dados."
 php /opt/glpi/bin/console db:install \
-        -L pt_BR -H ${SERVIDOR} \
+        -L pt_BR -H ${SERVIDOR_MARIADB} \
         -d ${BANCO} \
         -u ${USUARIO} \
         -p ${SENHA} \
@@ -110,7 +114,7 @@ echo "Remoção do script de backup do GLPI."
 rm -rf /opt/glpi/install/install.php
 
 echo "Alteração da senha dos usuários post-only, tech, normal e glpi para 'semsenha'."
-mariadb -h ${SERVIDOR} -u${USUARIO} -p${SENHA} ${BANCO} <<- "EOF"
+mariadb -h ${SERVIDOR_MARIADB} -u${USUARIO} -p${SENHA} ${BANCO} <<- "EOF"
 UPDATE glpi_users
 SET password='$2y$10$gSOO66tUqpVuhx9ykDtaA.JpsY8QVVXmrVChdWqahutT93XV/aCi2'
 WHERE name IN ('post-only', 'tech', 'normal', 'glpi');
@@ -155,7 +159,7 @@ echo "---------------------------------------"
 echo "Informações de configuração para o GLPI"
 echo "---------------------------------------"
 echo "Banco de dados do GLPI: ${BANCO}"
-echo "Endereço do banco: ${SERVIDOR}"
+echo "Endereço do banco: ${SERVIDOR_MARIADB}"
 echo "Usuário do banco: ${USUARIO}"
 echo "Senha do banco: ${SENHA}"
 echo "---------------------------------------"

@@ -1,111 +1,86 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-IMAGEM = "generic/rocky9"
-
-
 Vagrant.configure("2") do |config|
   
   config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts", "vagrant-env", "vagrant-hostsupdater"]
   config.env.enable
+
+  IMAGEM = "generic/rocky9"
+
+  VMS = [
+    {
+      :NOME => "haproxy",
+      :IP => ENV['SERVIDOR_HAPROXY'],
+      :MEM => "1024",
+      :CPU => "1",
+      :SHELL => "scripts/101-haproxy.sh"
+    },{
+      :NOME => "memcached",
+      :IP => ENV['SERVDOR_MEMCACHED'],
+      :MEM => "1024",
+      :CPU => "1",
+      :SHELL => "scripts/102-memcached.sh"
+    },{
+      :NOME => "mariadb",
+      :IP => ENV['SERVDOR_MARIADB'],
+      :MEM => "2048",
+      :CPU => "2",
+      :SHELL => "scripts/103-mariadb.sh"
+    },{
+      :NOME => "app",
+      :IP => ENV['SERVIDOR_WEB'],
+      :MEM => "2048",
+      :CPU => "2",
+      :SHELL => "scripts/104-app.sh"
+    }
+  ]
 
   if Vagrant.has_plugin?("vagrant-vbguest")
     config.vbguest.auto_update = false
   end
 
   config.hostsupdater.aliases = {
-    '192.168.56.10' => ['glpi.local']
+    ENV['SERVIDOR_HAPROXY'] => ENV['GLPI_URL']
   }
 
   config.vm.provision "shell", path: "scripts/100-geral.sh"
 
-  config.vm.define "haproxy" do |lb|
-    lb.vm.box = IMAGEM
-    lb.vm.hostname = "haproxy.glpi.local"
-    lb.vm.network "private_network", :ip => "192.168.56.10", :adapter => 2
-    lb.vm.provision :hosts, :sync_hosts => true
-    lb.vm.provider "virtualbox" do |v|
-      v.memory = 1024
-      v.cpus = 1
-      v.default_nic_type = "virtio"
-      v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
-      v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
-      v.linked_clone = true
-    end
+  VMS.each do |instancia|
+    config.vm.define instancia[:NOME] do |w|
+      w.vm.box = IMAGEM
+      w.vm.hostname = "#{instancia[:NOME]}.#{ENV['GLPI_URL']}"
+      w.vm.network "private_network", :ip => instancia[:IP], :adapter => 2
+      w.vm.provision :hosts, :sync_hosts => true
+      w.vm.provider "virtualbox" do |v|
+        v.memory = instancia[:MEM]
+        v.cpus = instancia[:CPU]
+        v.default_nic_type = "virtio"
+        v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
+        v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
+        v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
+        v.linked_clone = true
+      end
 
-    lb.vm.provision "shell", path: "scripts/101-haproxy.sh"
-  end
+      w.vm.provision :shell do |s|
+        s.env = {
+          SENHA_ROOT:ENV['SENHA_ROOT'],
+          BANCO:ENV['BANCO'],
+          USUARIO:ENV['USUARIO'],
+          SENHA:ENV['SENHA'],
+          RANGE:ENV['RANGE'],
 
-  config.vm.define "memcached" do |mc|
-    mc.vm.box = IMAGEM
-    mc.vm.hostname = "memcached.glpi.local"
-    mc.vm.network "private_network", :ip => "192.168.56.11", :adapter => 2
-    mc.vm.provision :hosts, :sync_hosts => true
-    mc.vm.provider "virtualbox" do |v|
-      v.memory = 1024
-      v.cpus = 1
-      v.default_nic_type = "virtio"
-      v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
-      v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
-      v.linked_clone = true
-    end
+          SERVIDOR_HAPROXY:ENV['SERVIDOR_HAPROXY'],
+          SERVDOR_MEMCACHED:ENV['SERVDOR_MEMCACHED'],
+          SERVDOR_MARIADB:ENV['SERVDOR_MARIADB'],
+          SERVIDOR_WEB:ENV['SERVIDOR_WEB'],
 
-    mc.vm.provision "shell", path: "scripts/102-memcached.sh"
-  end
+          GLPI_URL:ENV['GLPI_URL'],
 
-  config.vm.define "mariadb" do |db|
-    db.vm.box = IMAGEM
-    db.vm.hostname = "mariadb.glpi.local"
-    db.vm.network "private_network", :ip => "192.168.56.12", :adapter => 2
-    db.vm.provision :hosts, :sync_hosts => true
-    db.vm.provider "virtualbox" do |v|
-      v.memory = 2048
-      v.cpus = 2
-      v.default_nic_type = "virtio"
-      v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
-      v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
-      v.linked_clone = true
-    end
-
-    db.vm.provision :shell do |s|
-      s.env = {
-        SENHA_ROOT:ENV['SENHA_ROOT'],
-        BANCO:ENV['BANCO'],
-        USUARIO:ENV['USUARIO'],
-        SENHA:ENV['SENHA'],
-        RANGE:ENV['RANGE']
-      }
-      s.path = "scripts/103-mariadb.sh"
-    end
-  end
-
-  config.vm.define "app" do |app|
-    app.vm.box = IMAGEM
-    app.vm.hostname = "app.glpi.local"
-    app.vm.network "private_network", :ip => "192.168.56.13", :adapter => 2
-    app.vm.provision :hosts, :sync_hosts => true
-    app.vm.provider "virtualbox" do |v|
-      v.memory = 2048
-      v.cpus = 2
-      v.default_nic_type = "virtio"
-      v.customize ["modifyvm", :id, "--natnet1", "10.254.0.0/16"]
-      v.customize ["modifyvm", :id, "--natdnsproxy1", "off"]
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "off"]
-    end
-
-    app.vm.provision :shell do |s|
-      s.env = {
-        SENHA_ROOT:ENV['SENHA_ROOT'],
-        BANCO:ENV['BANCO'],
-        USUARIO:ENV['USUARIO'],
-        SENHA:ENV['SENHA'],
-        SERVIDOR:ENV['SERVIDOR'],
-        VERSAO_GLPI:ENV['VERSAO_GLPI']
-      }
-      s.path = "scripts/104-app.sh"
+          VERSAO_GLPI:ENV['VERSAO_GLPI']
+        }
+        s.path = "#{instancia[:SHELL]}"
+      end
     end
   end
 end

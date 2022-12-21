@@ -67,6 +67,8 @@ Para acessar os painéis do Cockpit de cada máquina, o usuário e a senha são 
 - [https://mariadb.glpi.local:9090](https://mariadb.glpi.local:9090)
 - [https://app.glpi.local:9090](https://app.glpi.local:9090)
 
+Por último, para testar o mod_security, é possível através da URL [https://app.glpi.local/?testparam=teste](https://app.glpi.local/?testparam=teste).
+
 ## Destruindo o ambiente de estudos e liberando os recursos alocados
 
 Para apagar a instalação e todos os recursos criados, é só usar o comando abaixo. Também pode ser usado caso você queira recriar o ambiente do zero.
