@@ -67,6 +67,7 @@ frontend glpi-server
    
 backend glpi-server
     option httpchk
+    http-send-name-header Host
     http-check expect status 200
     balance roundrobin
     default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
