@@ -105,10 +105,10 @@ php /opt/glpi/bin/console db:install \
 
 echo "Configuração do Memcached como engine de cache do GLPI."
 php /opt/glpi/bin/console glpi:cache:configure --use-default
-php /opt/glpi/bin/console glpi:cache:configure --dsn=memcached://192.168.56.11
+php /opt/glpi/bin/console glpi:cache:configure --dsn=memcached://${SERVIDOR_MEMCACHED}
 
 echo "Alteração da URL padrão do GLPI para glpi.local."
-php /opt/glpi/bin/console glpi:config:set url_base 'https://glpi.local'
+php /opt/glpi/bin/console glpi:config:set url_base "https://${GLPI_URL}"
 
 echo "Remoção do script de backup do GLPI."
 rm -rf /opt/glpi/install/install.php
