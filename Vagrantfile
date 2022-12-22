@@ -63,22 +63,7 @@ Vagrant.configure("2") do |config|
       end
 
       w.vm.provision :shell do |s|
-        s.env = {
-          SENHA_ROOT:ENV['SENHA_ROOT'],
-          BANCO:ENV['BANCO'],
-          USUARIO:ENV['USUARIO'],
-          SENHA:ENV['SENHA'],
-          RANGE:ENV['RANGE'],
-
-          SERVIDOR_HAPROXY:ENV['SERVIDOR_HAPROXY'],
-          SERVIDOR_MEMCACHED:ENV['SERVIDOR_MEMCACHED'],
-          SERVIDOR_MARIADB:ENV['SERVIDOR_MARIADB'],
-          SERVIDOR_WEB:ENV['SERVIDOR_WEB'],
-
-          GLPI_URL:ENV['GLPI_URL'],
-
-          VERSAO_GLPI:ENV['VERSAO_GLPI']
-        }
+        s.env = ENV.to_hash
         s.path = "#{instancia[:SHELL]}"
       end
     end
