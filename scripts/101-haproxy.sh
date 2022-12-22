@@ -51,7 +51,7 @@ defaults
     maxconn                 3000
 
 frontend stats
-    bind *:8081
+    bind *:8081 ssl crt /etc/haproxy/haproxy-selfsigned.pem ssl-min-ver TLSv1.2
     stats enable
     stats uri /glpi-stats
     stats refresh 10s
