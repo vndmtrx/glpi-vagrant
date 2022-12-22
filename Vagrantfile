@@ -17,13 +17,13 @@ Vagrant.configure("2") do |config|
       :SHELL => "scripts/101-haproxy.sh"
     },{
       :NOME => "memcached",
-      :IP => ENV['SERVDOR_MEMCACHED'],
+      :IP => ENV['SERVIDOR_MEMCACHED'],
       :MEM => "1024",
       :CPU => "1",
       :SHELL => "scripts/102-memcached.sh"
     },{
       :NOME => "mariadb",
-      :IP => ENV['SERVDOR_MARIADB'],
+      :IP => ENV['SERVIDOR_MARIADB'],
       :MEM => "2048",
       :CPU => "2",
       :SHELL => "scripts/103-mariadb.sh"
@@ -71,8 +71,8 @@ Vagrant.configure("2") do |config|
           RANGE:ENV['RANGE'],
 
           SERVIDOR_HAPROXY:ENV['SERVIDOR_HAPROXY'],
-          SERVDOR_MEMCACHED:ENV['SERVDOR_MEMCACHED'],
-          SERVDOR_MARIADB:ENV['SERVDOR_MARIADB'],
+          SERVIDOR_MEMCACHED:ENV['SERVIDOR_MEMCACHED'],
+          SERVIDOR_MARIADB:ENV['SERVIDOR_MARIADB'],
           SERVIDOR_WEB:ENV['SERVIDOR_WEB'],
 
           GLPI_URL:ENV['GLPI_URL'],
