@@ -48,7 +48,7 @@ VMS = [
 ]
 
 Vagrant.configure("2") do |config|  
-  config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts", "vagrant-env", "vagrant-hostsupdater"]
+  config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts", "vagrant-hostsupdater"]
 
   IMAGEM = "generic/rocky9"
 
