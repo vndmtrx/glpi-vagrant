@@ -1,47 +1,63 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-Vagrant.configure("2") do |config|
-  
+VARS = {
+  'SENHA_ROOT'=>'semsenha',
+  'BANCO'=>'banco_glpi',
+  'USUARIO'=>'usuario_glpi',
+  'SENHA'=>'senha_glpi',
+  'RANGE'=>'192.168.56.%',
+
+  'SERVIDOR_HAPROXY'=>'192.168.56.10',
+  'SERVIDOR_MEMCACHED'=>'192.168.56.11',
+  'SERVIDOR_MARIADB'=>'192.168.56.12',
+  'SERVIDOR_WEB'=>'192.168.56.13',
+
+  'GLPI_URL'=>'glpi.local',
+
+  #Pode ser conferido na URL https://github.com/glpi-project/glpi/releases
+  'VERSAO_GLPI'=>'10.0.5'
+}
+
+VMS = [
+  {
+    :NOME => "haproxy",
+    :IP => VARS['SERVIDOR_HAPROXY'],
+    :MEM => "1024",
+    :CPU => "1",
+    :SHELL => "scripts/101-haproxy.sh"
+  },{
+    :NOME => "memcached",
+    :IP => VARS['SERVIDOR_MEMCACHED'],
+    :MEM => "1024",
+    :CPU => "1",
+    :SHELL => "scripts/102-memcached.sh"
+  },{
+    :NOME => "mariadb",
+    :IP => VARS['SERVIDOR_MARIADB'],
+    :MEM => "2048",
+    :CPU => "2",
+    :SHELL => "scripts/103-mariadb.sh"
+  },{
+    :NOME => "app",
+    :IP => VARS['SERVIDOR_WEB'],
+    :MEM => "2048",
+    :CPU => "2",
+    :SHELL => "scripts/104-app.sh"
+  }
+]
+
+Vagrant.configure("2") do |config|  
   config.vagrant.plugins = ["vagrant-reload", "vagrant-hosts", "vagrant-env", "vagrant-hostsupdater"]
-  config.env.enable
 
   IMAGEM = "generic/rocky9"
-
-  VMS = [
-    {
-      :NOME => "haproxy",
-      :IP => ENV['SERVIDOR_HAPROXY'],
-      :MEM => "1024",
-      :CPU => "1",
-      :SHELL => "scripts/101-haproxy.sh"
-    },{
-      :NOME => "memcached",
-      :IP => ENV['SERVIDOR_MEMCACHED'],
-      :MEM => "1024",
-      :CPU => "1",
-      :SHELL => "scripts/102-memcached.sh"
-    },{
-      :NOME => "mariadb",
-      :IP => ENV['SERVIDOR_MARIADB'],
-      :MEM => "2048",
-      :CPU => "2",
-      :SHELL => "scripts/103-mariadb.sh"
-    },{
-      :NOME => "app",
-      :IP => ENV['SERVIDOR_WEB'],
-      :MEM => "2048",
-      :CPU => "2",
-      :SHELL => "scripts/104-app.sh"
-    }
-  ]
 
   if Vagrant.has_plugin?("vagrant-vbguest")
     config.vbguest.auto_update = false
   end
 
   config.hostsupdater.aliases = {
-    ENV['SERVIDOR_HAPROXY'] => ENV['GLPI_URL']
+    VARS['SERVIDOR_HAPROXY'] => VARS['GLPI_URL']
   }
 
   config.vm.provision "shell", path: "scripts/100-geral.sh"
@@ -49,7 +65,7 @@ Vagrant.configure("2") do |config|
   VMS.each do |instancia|
     config.vm.define instancia[:NOME] do |w|
       w.vm.box = IMAGEM
-      w.vm.hostname = "#{instancia[:NOME]}.#{ENV['GLPI_URL']}"
+      w.vm.hostname = "#{instancia[:NOME]}.#{VARS['GLPI_URL']}"
       w.vm.network "private_network", :ip => instancia[:IP], :adapter => 2
       w.vm.provision :hosts, :sync_hosts => true
       w.vm.provider "virtualbox" do |v|
@@ -63,7 +79,7 @@ Vagrant.configure("2") do |config|
       end
 
       w.vm.provision :shell do |s|
-        s.env = ENV.to_hash
+        s.env = VARS.to_hash
         s.path = "#{instancia[:SHELL]}"
       end
     end
