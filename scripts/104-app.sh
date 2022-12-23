@@ -39,6 +39,9 @@ cat << EOF | tee /etc/httpd/conf.d/001-glpi.conf
 </Directory>
 EOF
 
+echo "Exclusão da página de welcome do Apache, comentando todas as linhas do welcome.conf."
+sed -i '/^/s/^/#/' /etc/httpd/conf.d/welcome.conf
+
 echo "Instalação das dependências do GLPI."
 dnf install -y php-pecl-mysql php-gd php-intl php-ldap php-pecl-zip php-pecl-memcached
 
@@ -68,8 +71,6 @@ define('GLPI_LOG_DIR', '/var/lib/glpi/log');
 EOF
 
 echo "Alterações de configuração do PHP."
-#sed -i 's,;date.timezone =,date.timezone = America/Sao_Paulo,g' /etc/php.ini
-#sed -i 's,upload_max_filesize = 2M,upload_max_filesize = 20M,g' /etc/php.ini
 cat << EOF | tee /etc/php.d/00-glpi.ini
 [PHP]
 upload_max_filesize = 20M
