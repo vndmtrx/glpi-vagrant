@@ -8,8 +8,6 @@ GLPI é um software bastante usado hoje em dia para fazer o gerenciamento de fil
 
 Primeiramente é preciso informar que esse repositório faz uso de scripts bash e não usa ansible, então sempre é recomendado destruir toda a estrutura (`vagrant destroy -f`) e recriar novamente (`vagrant up`) após alterações nos scripts ou no próprio Vagrantfile, para garantir a idempotência.
 
-Adicionalmente, foi criado um arquivo `.env` onde ficam as configurações iniciais básicas necessárias para se subir a instalação do GLPI. Elas não são muitas, e basicamente se resumem a usuários e senhas, e a versão do GLPI que será instalada.
-
 ### Opiniões assumidas sobre algumas configurações
 
 Uma coisa para qual esse repositório foi pensado foi a de ser possível customizar a instalação do cluster de algumas maneiras bem simples, e mantendo-se o restante da instalação o mais automatizado possível. Desta forma, algumas decisões pessoais foram tomadas. As mais importantes são:
